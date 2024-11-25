@@ -1,0 +1,39 @@
+import espnow
+from machine import Pin, I2C
+import time
+import lcd_api
+import i2c_lcd
+
+# Configurar ESP32 para trabajar en modo estación
+wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
+
+# Iniciar ESP-NOW
+esp = espnow.ESPNow()
+esp.init()
+
+# Dirección MAC del emisor (reemplazar con la dirección MAC del emisor)
+peer_mac = b'\x30\xAE\xA4\x00\x00\x00'  # Dirección MAC de ejemplo
+esp.add_peer(peer_mac)
+
+# Configuración del LCD I2C
+i2c = I2C(scl=Pin(22), sda=Pin(21))  # Ajustar los pines según tu conexión
+lcd = i2c_lcd.Lcd(I2C(0), 0x27, 2, 16)  # Dirección I2C y tamaño del LCD
+
+# Función para hacer scroll en el LCD
+def scroll_text(text, lcd, delay=0.2):
+    lcd.clear()
+    length = len(text)
+    for i in range(length - 16 + 1):  # Si el texto es más largo que la pantalla
+        lcd.move_to(0, 0)
+        lcd.putstr(text[i:i+16])  # Muestra una parte del texto
+        time.sleep(delay)
+
+# Recibir nombres y mostrar en el LCD con scroll
+while True:
+    if esp.any():  # Verificar si se recibió algo
+        msg = esp.recv()
+        if msg:
+            nombre = msg[0].decode('utf-8')  # Decodificar el nombre recibido
+            print("Recibido:", nombre)
+            scroll_text(nombre, lcd)  # Mostrar el nombre con scroll
